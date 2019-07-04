@@ -1,0 +1,33 @@
+<html>
+<style>
+    h1 {
+        font-family: Helvetica, Arial, sans-serif;
+        display: block;
+    }
+    p, a {
+        font-family: Helvetica, Arial, sans-serif;
+    }
+  </style>
+<head>
+    <title>Sign up for token</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="static/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
+<body>
+<div class="container">
+    <h1>Sign Up</h1>
+    <br>
+    <form action="" method="post">
+        <input type="text" placeholder="Username" name="username" value="{{
+          request.form.username }}">
+        <input class="btn btn-default" type="submit" value="Sign Up">
+    </form>
+    <br>
+    <br>
+    <a href="https://foodlg.gitbook.io/api/authentication">API Documentation</a>
+    {% if error %}
+    <p class="error">{{ error }}
+        {% endif %}
+</div>
+</body>
+</html>

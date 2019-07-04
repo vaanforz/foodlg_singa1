@@ -1,0 +1,17 @@
+#! /bin/bash
+
+# specify the source folder
+src=/path/to/src
+
+# specify the config file path relative to the foodlg folder
+config=/path/to/config
+
+# specify port, currently use the same port for outside- and inside- docker port
+port=8001
+
+# specify the training dataset path
+dataset=/path/to/dataset
+
+# mount the directory of config and dataset to the docker container
+nvidia-docker run -v $src:/root/foodlg -v $dataset:/root/dataset --name foodlg-train -d foodlg  \
+  /bin/bash -c "cd foodlg && python train.py --load_config $config"

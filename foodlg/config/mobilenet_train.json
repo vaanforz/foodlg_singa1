@@ -1,0 +1,20 @@
+{
+	"model": "mobilenet",
+	"dataset": "foodlg",
+	"lr": 0.01,
+	"weight_decay": 1e-4,
+	"momentum": 0.9,
+	"batchsize": 32,
+	"imgwidth": 224,
+	"imgheight": 224,
+	"numoftrainings": 199106,
+	"numofvalidations": 41590,
+	"initialepoch": -1,
+	"basedir": "/root/dataset",
+	"pretrain_weights": "",
+	"finetune_weights": "",
+	"checkpoint": "",
+	"deviceid": 1,
+	"group": 3,
+	"bn_ratio": 1.0
+}

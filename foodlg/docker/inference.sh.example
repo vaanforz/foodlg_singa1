@@ -1,0 +1,17 @@
+#! /bin/bash
+
+# specify the source folder
+src=/path/to/src
+
+# specify the config file path relative to the foodlg folder
+config=/path/to/config
+
+# specify the model zoo directory where pre-trained models are stored
+modelZoo=/path/to/model-zoo
+
+# specify port, currently use the same port for outside- and inside- docker port
+port=8001
+
+# mount the directory of config and dataset to the docker container
+nvidia-docker run -p $port:5000 -v $src:/root/foodlg -v $modelZoo:/root/model-zoo --name foodlg-inference \
+  -d foodlg /bin/bash -c "cd foodlg && python inference.py --load_config $config"

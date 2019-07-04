@@ -1,0 +1,16 @@
+{
+	"model": "mobilenet",
+	"dataset": "foodlg",
+	"lr": 0.01,
+	"momentum": 0.9,
+	"imgwidth": 224,
+	"imgheight": 224,
+	"weights": "/root/model-zoo/mobilenet-1.0-foodlg-0.69.h5",
+	"basedir": "/root/dataset",
+	"deviceid": 1,
+	"group": 3,
+	"bn_ratio": 1.0,
+	"alpha": 1.0,
+	"image_path": "/root/dataset/foodlg/test/312/142849.jpg",
+	"topk": 5
+}
