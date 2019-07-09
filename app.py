@@ -11,11 +11,24 @@ import classes
 import settings
 import users
 
+from PIL import Image
+import io
+import argparse
+import requests
+import numpy as np
+import ast
+
+import os
+import inspect
+import traceback
+
+from keras.preprocessing.image import load_img, img_to_array
+
 app = Flask(__name__)
 auth = HTTPBasicAuth()
-requests_db = redis.StrictRedis(host=settings.REDIS_HOST,
-                                port=settings.REDIS_PORT,
-                                db=settings.REQUEST_DB)
+# requests_db = redis.StrictRedis(host=settings.REDIS_HOST,
+#                                 port=settings.REDIS_PORT,
+#                                 db=settings.REQUEST_DB)
 
 
 @app.route('/', methods=['GET'])
@@ -54,31 +67,31 @@ def user_quota_endpoint():
     return success_response_with_json(quota=user['quota'], tier=user['tier'])
 
 
-@app.route('/echo', methods=['POST'])
-def echo_endpoint():
-    try:
-        #print(type(request.data))
-        #print(request.data)
-        image_bytes = construct_image(raw_bytes=request.data)
-        token = get_token(request)
-        users.get_user(token=token)
-    except classes.UserAuthenticationError as bad_token_error:
-        return error_response_unauthorized(message=str(bad_token_error))
-    except classes.UserNotFoundError:
-        return error_response_unauthorized(message='No user associated with your token.')
-    except classes.ImageNotFoundError:
-        return error_response_bad_request(message='Please include an image in your request body.')
+# @app.route('/echo', methods=['POST'])
+# def echo_endpoint():
+#     try:
+#         #print(type(request.data))
+#         #print(request.data)
+#         image_bytes = construct_image(raw_bytes=request.data)
+#         token = get_token(request)
+#         users.get_user(token=token)
+#     except classes.UserAuthenticationError as bad_token_error:
+#         return error_response_unauthorized(message=str(bad_token_error))
+#     except classes.UserNotFoundError:
+#         return error_response_unauthorized(message='No user associated with your token.')
+#     except classes.ImageNotFoundError:
+#         return error_response_bad_request(message='Please include an image in your request body.')
 
-    try:
-        request_id = make_request_in_queue(image=image_bytes, queue='echo')
-        request_done = wait_for_request_done(request_id)
-    except classes.AppServerTimeoutError:
-        return error_response_service_unavailable(message='Request timeout. Please try again.')
-    except Exception as e:
-        print(e)
-        return error_response_internal_server_error(message='Error during echo.')
+#     try:
+#         request_id = make_request_in_queue(image=image_bytes, queue='echo')
+#         request_done = wait_for_request_done(request_id)
+#     except classes.AppServerTimeoutError:
+#         return error_response_service_unavailable(message='Request timeout. Please try again.')
+#     except Exception as e:
+#         print(e)
+#         return error_response_internal_server_error(message='Error during echo.')
 
-    return request_done.results
+#     return request_done.results
 
 
 @app.route('/model', methods=['POST'])
@@ -96,10 +109,36 @@ def model_endpoint():
 
     if int(user['quota']) <= 0:
         return error_response_unauthorized(message='No more request quota.', quota=user['quota'], tier=user['tier'])
+
+    def predict_and_parse(image_bytes):
+        img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
+        x = img_to_array(img)
+
+        predictor_host='http://ncrs.d2.comp.nus.edu.sg:44745/predict'
+        data={'query': x.tolist()}
+        headers = {'Content-Type': 'application/json'}
+
+        r = requests.post(predictor_host, headers=headers, json=data)
+        original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'], dtype=np.float32)
+        top_indexes = np.argsort(original_pred_output)[::-1][:5]
+
+        label_index_path = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), 'foodlg', 'class_indices', 'food204' + '.npy')
+        label2index = np.load(label_index_path).item()  
+        index2label = [None] * len(label2index)
+        for k, v in label2index.items():
+            index2label[v] = k
+
+        tops = {}
+        for idx in top_indexes:
+            tops[index2label[idx]] = float(original_pred_output[idx])
+        
+        return tops
+
     try:
         task = get_task_in_lowercase(request)
-        request_id = make_request_in_queue(image=image_bytes, queue=task)
-        request_done = wait_for_request_done(request_id)
+        # request_id = make_request_in_queue(image=image_bytes, queue=task)
+        # request_done = wait_for_request_done(request_id)
+        request_done = predict_and_parse(image_bytes)
         if not task == 'echo':
             newuser = {'quota': int(user['quota']) -1 }
             user = users.update_user(name=user['name'], updates=newuser)
@@ -111,7 +150,7 @@ def model_endpoint():
         print(e)
         return error_response_internal_server_error(message='Error during classification.')
 
-    return success_response_with_json(quota=user['quota'], tier=user['tier'], results=request_done.results)
+    return success_response_with_json(quota=user['quota'], tier=user['tier'], results=request_done)
 
 
 @app.route('/users', methods=['GET'])
@@ -226,31 +265,31 @@ def get_task_in_lowercase(request):
     return result
 
 
-def make_request_in_queue(image, queue):
-    #new_request = classes.Request(image=image, task=queue)
-    new_request = classes.Request(image=image)
-    requests_db.rpush(queue, new_request.as_serialized())
-    return new_request.id
+# def make_request_in_queue(image, queue):
+#     new_request = classes.Request(image=image, task=queue)
+#     #new_request = classes.Request(image=image)
+#     requests_db.rpush(queue, new_request.as_serialized())
+#     return new_request.id
 
 
-def wait_for_request_done(request_id):
-    start_time = time.time()
-    serialized_request_done = None
+# def wait_for_request_done(request_id):
+#     start_time = time.time()
+#     serialized_request_done = None
 
-    while True:
-        serialized_request_done = requests_db.get(request_id)
-        #print('get results')
-        #print(serialized_request_done)
-        if serialized_request_done is not None:
-            request_done = classes.Request.from_serialized(serialized_request_done)
-            requests_db.delete(request_id)
-            return request_done
-        elif time.time() - start_time > settings.APP_POLLING_TIMEOUT:
-            requests_db.delete(request_id)
-            #print('timeout')
-            raise classes.AppServerTimeoutError()
-        else:
-            time.sleep(settings.APP_POLLING_INTERVAL)
+#     while True:
+#         serialized_request_done = requests_db.get(request_id)
+#         #print('get results')
+#         #print(serialized_request_done)
+#         if serialized_request_done is not None:
+#             request_done = classes.Request.from_serialized(serialized_request_done)
+#             requests_db.delete(request_id)
+#             return request_done
+#         elif time.time() - start_time > settings.APP_POLLING_TIMEOUT:
+#             requests_db.delete(request_id)
+#             #print('timeout')
+#             raise classes.AppServerTimeoutError()
+#         else:
+#             time.sleep(settings.APP_POLLING_INTERVAL)
 
 
 @auth.verify_password

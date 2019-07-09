@@ -5,9 +5,13 @@ import settings
 
 
 class Request:
-    def __init__(self, image):
+    def __init__(self, image, task=None):
         self.id = datetime.datetime.today().strftime(settings.DATETIME_FORMAT)
         self.image = image
+        if(task is None):
+            self.task = 'food204'
+        else:
+            self.task = task
         self.results = None
 
     def __repr__(self):

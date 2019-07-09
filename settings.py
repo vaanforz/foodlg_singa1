@@ -12,7 +12,7 @@ MODEL_POLLING_INTERVAL = .1
 APP_POLLING_INTERVAL = .1
 # If no results found within this time frame, then show user a timeout
 # error message
-APP_POLLING_TIMEOUT = 30
+APP_POLLING_TIMEOUT = 15
 
 
 # Redis connection settings.
