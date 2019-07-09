@@ -22,8 +22,6 @@ REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 
 USER_DB = 0
-REQUEST_DB = 1
-RESULT_DB = 2
 
 DEFAULT_TASK = 'food204'
 
