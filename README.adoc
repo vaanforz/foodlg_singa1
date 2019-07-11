@@ -7,11 +7,11 @@ Users must include an admin-issued token in their HTTP requests.
 
 == How to install and use
 
-1. Build the docker image first
+1. CD into Foodlg root directory and build the docker image first
 
     docker build -t foodlg_image .
 
-2. CD into Foodlg root directory and run:
+2. Run the command to start the container and server
 
     bash run.sh
 

@@ -49,19 +49,15 @@ RUN wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-l
 
 ENV PATH=/opt/conda/bin:${PATH}
 
-RUN conda install tensorflow-gpu==1.8.0 
 RUN pip install --upgrade pip
+RUN pip install numpy==1.16.2
+RUN pip install tensorflow-gpu==1.14.0
+RUN pip install Keras==2.2.4
 RUN pip install flask flask-httpauth flask-sqlalchemy passlib redis opencv-python Pillow
 
-# Install keras from source
-RUN git clone https://github.com/keras-team/keras.git /root/keras && \
-	cd /root/keras && \
-        git checkout a2d11d4724d3cf4a0b18a7fe8448723d92e1c716 && \
-	python setup.py install && \
-	cd /root
-
 # create directory
-RUN mkdir /root/foodlg /root/dataset /root/model-zoo /root/database
+RUN cd /root
+RUN mkdir /root/foodlg /root/dataset /root/database
 
 # copy configurations
 #COPY ./config /foodlg/config
