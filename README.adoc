@@ -1,10 +1,19 @@
-= restful-app
+= Foodlg-app
 :toc:
 
-This Flask app provides a RESTful API for users to send images into
-machine learning models. Requests are limited by day.
+This Foodlg app utilizes a RESTful API for users to send images into
+machine learning models. Requests are limited per user.
 Users must include an admin-issued token in their HTTP requests.
 
+== How to install
+
+1. CD into Foodlg root directory and run:
+
+    bash run.sh
+
+2. Prepare a HTTP `POST` request on `http://[hostname]/echo`. include image and token
+3. You will receive a `200 OK` response with the same image, exactly as the server
+received it, back in the HTTP response body.
 
 == Guide for API users
 === How to include your token in HTTP requests
@@ -16,16 +25,9 @@ Your token would be subjected to security risks.
 
     http://[hostname]/quota?token=YOUR_TOKEN_HERE
 
-    http://[hostname]/echo?token=YOUR_TOKEN_HERE
-
     http://[hostname]/model?token=YOUR_TOKEN_HERE
 
-
-2. Include your token in the `Authorization` header of your HTTP request.
-
- curl -H "Authorization:YOUR_TOKEN_HERE" http://[hostname]/quota
-
-3. Include your token in the `Token` header of your HTTP request.
+2. Include your token in the `Token` header of your HTTP request.
 
  curl -H "Token:YOUR_TOKEN_HERE" http://[hostname]/quota
 
@@ -53,15 +55,6 @@ However, if your `quota_left` reaches zero, the response will be
             "total_quota": 50
         }
     }
-
-=== How to make the server echo your image
-This helps you to check if the server is receiving the image as you expect it to.
-
-1. Prepare a HTTP `POST` request on `http://[hostname]/echo`.
-2. Include your image in your HTTP request body.
-3. Don't forget to include your token in the request.
-4. You will receive a `200 OK` response with the same image, exactly as the server
-received it, back in the HTTP response body.
 
 === How to make a model prediction request
 Use a HTTP `POST` request on `http://[hostname]/model`.
@@ -279,23 +272,6 @@ Here's a summary of restrictions on the values of a new user's info:
 |Same as `total_quota`
 |===
 
-The finer details are here:
-
-1. `name` *is compulsory and must have a unique string associated with it.* The string cannot
-exceed 80 characters in length.
-Leading and trailing whitespace will be stripped. It will be stored in the database
-in lowercase. In the database, each user's `name` must be unique.
-2. `token` *is an optional field. If included, it must be a string, and be different
-from that of other users in the database.* It cannot be longer than 64
-characters. If not included, a randomly-generated 32-character
-string of uppercase letters, lowercase letters, and digits, will be set as the
-token instead.
-3. `total_quota` *is an optional field. If it exists, it must correspond to a non-negative integer.*
-If not included, it will be set to the default of 10.
-4. `quota_left` *is an optional field. If it exists, it must correspond to a non-negative integer
-that is less than or equal to that of* `total_quota`*.*
-If not included, it will be set to whatever `total_quota` is.
-
 === Update a user
 Use `PUT` `http://[hostname]/users/[username]` and include the following JSON in your request body.
 The app checks which fields you've included or excluded and updates the existing user's info to the new
@@ -342,16 +318,6 @@ Use `DELETE` `http://[hostname]/users/[username]`. You will get back a JSON resp
     }
 
 == Developer guide
-=== High-level project overview
-
-image::docs/architecture/architecture.001.jpeg[High-level project overview]
-
-These are the various layers of the project. The `app` instances
-are all identical (merged into a single one in the latest version). However, `server` instances can be initialized differently
-for different tasks via command-line arguments.
-
-TIP:  The `server` instance can be added / removed dynamically.
-
 === Dependencies
 - Flask
 - Flask-SQLAlchemy
@@ -360,15 +326,11 @@ TIP:  The `server` instance can be added / removed dynamically.
 - redis (both original and py version)
 - pillow
 
-You can actually run the bash script `run_now.sh` to
-get the app going in just one terminal command.
-The script installs the dependencies for you as well.
-
-However, if you prefer to install the dependencies manually via command line,
+Please install the dependencies manually via command line,
 the relevant bash commands are provided below for your convenience:
 
     apt-get install redis
-
+    
     pip install --upgrade pip
 
     pip install flask
@@ -388,35 +350,10 @@ the relevant bash commands are provided below for your convenience:
 
     redis-server db.conf
 
-2) In another terminal window, start the `app`
-
-    python app.py
-
-3) In other terminal windows, start `server` for your desired tasks/dataset. 
-
-    python server.py --model xception --dataset food167 --imgwidth 299 --imgheight 299 --weights MODEL-ZOO/xception-food167-0.80.h5 --topk 5
-    python server.py --model xception --dataset food158 --imgwidth 299 --imgheight 299 --weights MODEL-ZOO/xception-26-0.82.h5 --topk 5
-    python server.py --model xception --dataset food203 --imgwidth 299 --imgheight 299 --weights MODEL-ZOO/xception-11-0.78.h5 --topk 5
-
-=== Adding new tasks
-A new type of task needs a new Model implementation.  The model must have a `predict(img)` function implented. They can inherit from the `base` Model class.
-The task type is inferred from the dataset name, e.g.,
-
-    if dataset.startswith('food'):
-        server_model = FoodClassifier(args)
-    elif dataset.startswith('xray'):
-        server_model = XRayClassifier(args)
-
-One model class can train over multiple datasets and then do the inference.
-
-The dataset name is used in the user-facing model endpoint e.g. `[hostname]/model?task=food158`,
-but the endpoint is case-insensitive (users can enter `model?task=Food158` for the same effect).
-
 
 === How the `app` works
 The `app` is a Flask app which exposes various endpoints for the users
 and admins. The `model` endpoint is the most complex. The general algorithm is given below.
-
 
 1) Get the `image_bytes` from the request
 
@@ -441,23 +378,3 @@ The redis database may only store serialized bytes, so serialize the
 NOTE: Exceptions may be raised at each step. The `except` blocks are there
 to handle the various exceptions, and return an informative error response to the user.
 
-=== How the `server` works
-
-A `server` instance will initialize a _model_ instance and store it
-in the `server_model` global variable. Potential models classes are available in the `models.py` module.
-
-After initialization, the `server` instance will `poll_queue_forever()`.
-Specifically, it will only poll the queue that was dictated by the `--dataset` argument.
-
-Each time it polls its queue, it will pop a batch of `Request` objects, de-serialize
-them, and send them to the `server` for prediction results.
-
-image::docs/architecture/architecture.003.jpeg[How the server works]
-
-Once prediction results are obtained, the `Request` object's `results` attribute is updated
-to store the prediction results, and the object is serialized and placed back into the redis database
-for discovery by the `app` instance that put it there in the first place.
-
-=== Known issues
-- None yet
-- Will update as discovered
