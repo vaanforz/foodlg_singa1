@@ -1,11 +1,11 @@
-= Foodlg-app
+= Foodlg app
 :toc:
 
 This Foodlg app utilizes a RESTful API for users to send images into
 machine learning models. Requests are limited per user.
-Users must include an admin-issued token in their HTTP requests.
+Users must include an admin-issued token in their HTTP requests. For Rafiki APP, please refer to the last section below.
 
-== How to install and use
+== How to install Foodlg app
 
 1. CD into Foodlg root directory and build the docker image first
 
@@ -14,17 +14,19 @@ Users must include an admin-issued token in their HTTP requests.
 2. Run the command to start the container and server
 
     bash run.sh
+    
+== How to check for quota and query for prediction using Foodlg app
 
-3. Sign up for an account at the `http://[hostname]/signup` endpoint, and save the generated token
+1. Sign up for an account at the `http://[hostname]/signup` endpoint, and save the generated token
 
-4. To check for user quota, send a HTTP `GET` request on `http://[hostname]/quota` endpoint, include the user token in the following format:
+2. To check for user quota, send a HTTP `GET` request on `http://[hostname]/quota` endpoint, include the user token in the following format:
 
     import requests
     r = requests.get('http://[hostname]/quota',
                       headers = {'Token': 'your_token_here'}
                       )
 
-4. To query for image prediction, send a HTTP `POST` request on `http://[hostname]/model` endpoint, include token and image in the following format:
+3. To query for image prediction, send a HTTP `POST` request on `http://[hostname]/model` endpoint, include token and image in the following format:
 
     r = requests.post('http://[hostname]/model',
                       headers = {'Token': 'your_token_here'},
@@ -106,9 +108,6 @@ You will receive the results for this specific task instead.
             "laksa": 0.3
         }
     }
-
-In case you're wondering, the default `model` endpoint is
-equivalent to `/model?task=all`.
 
 If your `quota_left` reaches zero, the response will be
 `401 Unauthorized` with the following JSON, just like in `quota`.
@@ -367,30 +366,69 @@ the relevant bash commands are provided below for your convenience:
     redis-server db.conf
 
 
-=== How the `app` works
-The `app` is a Flask app which exposes various endpoints for the users
-and admins. The `model` endpoint is the most complex. The general algorithm is given below.
+= Rafiki app
 
-1) Get the `image_bytes` from the request
+Rafiki is a distributed system that trains machine learning (ML) models and deploys trained models, built with ease-of-use in mind. To do so, it leverages on automated machine learning (AutoML).
 
-2) Identify the user via the included `token`
+Read Rafiki's full documentation at https://nginyc.github.io/rafiki/docs/latest
 
-3) Check the user's `current_quotas`
+== How to install Rafiki
 
-4) If `current_quotas` are insufficient, return the `401 Unauthorized` error
+1. Install Docker 18 (Ubuntu, MacOS) and, if required, add your user to docker group (Linux).
 
-5) Else, continue on...
+2. Install Python 3.6 such that the python and pip commands point to the correct installation of Python 3.6
 
-6) Parse the `task` from the user's URI querystring arguments
+3. Clone the project at https://github.com/nginyc/rafiki (e.g. with Git)
 
-7) Make a `Request` object to encapsulate the `image_bytes`.
-The redis database may only store serialized bytes, so serialize the
-`Request` object and add to the redis queue dedicated to the particular `task`
+4. Setup Rafiki’s complete stack with the setup script:
 
-8) Poll the redis database until the `Request` object is found (identified via its `request_id`)
+    bash scripts/start.sh
 
-9) Decrement the user's `quota_left` and return the results stored in `request.results`
+5. Rafiki Admin will be available at 127.0.0.1:3000.
 
-NOTE: Exceptions may be raised at each step. The `except` blocks are there
-to handle the various exceptions, and return an informative error response to the user.
+6. To destroy Rafiki’s complete stack:
+
+    bash scripts/stop.sh
+    
+7. For further instructions on setting up Rafiki on multiple nodes and/or training using GPU, please refer to https://nginyc.github.io/rafiki/docs/latest/src/dev/setup.html.
+
+== How to use Rafiki
+
+1. Create a Python script inside the Rafiki project root folder
+
+2. Login to the client by running these codes and using the default credentials:
+
+    from rafiki.client import Client
+    from rafiki.constants import TaskType, ModelDependency
+    client = Client(admin_host='your_host_name', admin_port=3000)
+    client.login(email='superadmin@rafiki', password='rafiki')
+    
+3. To create a model in Rafiki, first copy my Xception codes located in https://gist.github.com/vaanforz/31a4878893638cc41c9f61012acda613, to Rafiki's examples/models/image_classification folder, before running:
+
+    client.create_model(
+        name='TfXception',
+        task='IMAGE_CLASSIFICATION',
+        model_file_path='examples/models/image_classification/Xception.py',
+        model_class='TfXception',
+        dependencies={ModelDependency.TENSORFLOW: '1.12.0', 'keras': '2.2.4', 'Pillow': '5.3.0'}
+    )
+    
+4. To create a train job in Rafiki:
+
+    client.create_train_job(
+        app='your_app_name',
+        task='IMAGE_CLASSIFICATION',
+        train_dataset_uri='data/train/',
+        test_dataset_uri='data/test/',
+        budget={ 'MODEL_TRIAL_COUNT': 2, 'GPU_COUNT': 2 }
+    )
+
+5. To create an inference job in Rafiki:
+
+    client.create_inference_job(app='your_app_name')
+    
+6. Once the inference job is created, copy down the generated 'predictor_host' url and append '/predict', before modifying the predictor_host variable in Foodlg app's app.py, under @app.route('/model', methods=['POST']).
+    
+
+
 
