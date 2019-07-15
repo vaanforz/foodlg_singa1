@@ -378,15 +378,18 @@ Read Rafiki's full documentation at https://nginyc.github.io/rafiki/docs/latest
 
 2. Install Python 3.6 such that the python and pip commands point to the correct installation of Python 3.6
 
-3. Clone the project at https://github.com/nginyc/rafiki (e.g. with Git)
+3. Clone the project at https://github.com/nginyc/rafiki (e.g. with Git), and enter the project root folder
 
-4. Setup Rafiki’s complete stack with the setup script:
+4. Prepare your dataset directory in data/ folder, e.g. ![folder hierachy](https://i.stack.imgur.com/iNJRL.png).
+Label as 'train' and 'test' folder, and include desired categories in both folder. Each category folder should contain the .jpg or .png files of the respective categories. The actual image filenames do not matter.
+
+5. Setup Rafiki’s complete stack with the setup script:
 
     bash scripts/start.sh
 
-5. Rafiki Admin will be available at 127.0.0.1:3000.
+6. Rafiki Admin will be available at 127.0.0.1:3000.
 
-6. To destroy Rafiki’s complete stack:
+7. To destroy Rafiki’s complete stack:
 
     bash scripts/stop.sh
     
