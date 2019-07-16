@@ -7,11 +7,11 @@ Users must include an admin-issued token in their HTTP requests. For Rafiki APP,
 
 == How to install Foodlg app
 
-1. CD into Foodlg root directory and build the docker image first
+1. CD into Foodlg root directory and build the docker image first:
 
     docker build -t foodlg_image .
 
-2. Run the command to start the container and server
+2. Run the command to start the container and server (you will also be prompted for Rafiki's predictor_host url, make sure you set up Rafiki first before setting up Foodlg App, for more information, please refer to the section on Rafiki below):
 
     bash run.sh
     
@@ -31,6 +31,14 @@ Users must include an admin-issued token in their HTTP requests. For Rafiki APP,
     r = requests.post('http://[hostname]/model',
                       headers = {'Token': 'your_token_here'},
                       data = open(img_path, 'rb').read()
+                      )
+                      
+4. Additionally, you can select to output the top k results by adding in an additional parameter 'top_k':
+
+    r = requests.post('http://[hostname]/model',
+                      headers = {'Token': 'your_token_here'},
+                      data = open(img_path, 'rb').read(),
+                      params = {'top_k': 10} #default is 5
                       )
 
 == Guide for API users
@@ -383,17 +391,23 @@ Read Rafiki's full documentation at https://nginyc.github.io/rafiki/docs/latest
 4. Prepare your dataset directory in data/ folder, e.g. ![folder hierachy](https://i.stack.imgur.com/iNJRL.png).
 Label as 'train' and 'test' folder, and include desired categories in both folder. Each category folder should contain the .jpg or .png files of the respective categories. The actual image filenames do not matter.
 
-5. Setup Rafiki’s complete stack with the setup script:
+5. Run:
+
+    source .env.sh
+
+6. Setup Rafiki’s complete stack with the setup script:
 
     bash scripts/start.sh
 
-6. Rafiki Admin will be available at 127.0.0.1:3000.
+7. To enable GPU visibility for Rafiki, run (you will be prompted to input your hostname and GPU slot availability):
 
-7. To destroy Rafiki’s complete stack:
+    bash scripts/setup_node.sh
+
+8. To destroy Rafiki’s complete stack:
 
     bash scripts/stop.sh
     
-7. For further instructions on setting up Rafiki on multiple nodes and/or training using GPU, please refer to https://nginyc.github.io/rafiki/docs/latest/src/dev/setup.html.
+9. For further instructions on setting up Rafiki on multiple nodes/machines, please refer to https://nginyc.github.io/rafiki/docs/latest/src/dev/setup.html.
 
 == How to use Rafiki
 
@@ -410,7 +424,7 @@ Label as 'train' and 'test' folder, and include desired categories in both folde
 
     client.create_model(
         name='TfXception',
-        task='IMAGE_CLASSIFICATION',
+        task='', #make sure task field is blank
         model_file_path='examples/models/image_classification/Xception.py',
         model_class='TfXception',
         dependencies={ModelDependency.TENSORFLOW: '1.12.0', 'keras': '2.2.4', 'Pillow': '5.3.0'}
@@ -420,18 +434,18 @@ Label as 'train' and 'test' folder, and include desired categories in both folde
 
     client.create_train_job(
         app='your_app_name',
-        task='IMAGE_CLASSIFICATION',
+        task='', #make sure task field is blank
         train_dataset_uri='data/train/',
         test_dataset_uri='data/test/',
-        budget={ 'MODEL_TRIAL_COUNT': 2, 'GPU_COUNT': 2 }
+        budget={ 'MODEL_TRIAL_COUNT': 1, 'GPU_COUNT': 1 } #change 'GPU_COUNT' accordingly if you enabled more GPUs while running setup_node.sh
     )
 
 5. To create an inference job in Rafiki:
 
     client.create_inference_job(app='your_app_name')
     
-6. Once the inference job is created, copy down the generated 'predictor_host' url and append '/predict', before modifying the predictor_host variable in Foodlg app's app.py, under @app.route('/model', methods=['POST']).
+6. To get details about the running inference job in Rafiki:
+
+    client.get_running_inference_job(app='your_app_name')
     
-
-
-
+Copy down the Rafiki 'predictor_host' url, you will be prompted for the 'predictor_host' when setting up the Foodlg App later on.
