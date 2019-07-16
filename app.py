@@ -114,7 +114,7 @@ def model_endpoint():
         img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
         x = img_to_array(img)
 
-        predictor_host='http://ncrs.d2.comp.nus.edu.sg:44745/predict'
+        predictor_host = open("rafiki_predictor_host.txt", "r").read().splitlines()[0]
         data={'query': x.tolist()}
         headers = {'Content-Type': 'application/json'}
 
