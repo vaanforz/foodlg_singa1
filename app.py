@@ -121,8 +121,15 @@ def model_endpoint():
         r = requests.post(predictor_host, headers=headers, json=data)
         original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'])
         
-        #return dict(original_pred_output[:5])
-        return {k: round(float(v),6) for k, v in dict(original_pred_output[:5]).items()}
+        top_k = request.args.get('top_k')
+        try:
+            top_k = int(top_k)
+            if(top_k < 1):
+                top_k = 5
+        except:
+            top_k = 5
+            
+        return {k: round(float(v),6) for k, v in dict(original_pred_output[:top_k]).items()}
 
     try:
         task = get_task_in_lowercase(request)
