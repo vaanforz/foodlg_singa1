@@ -119,20 +119,10 @@ def model_endpoint():
         headers = {'Content-Type': 'application/json'}
 
         r = requests.post(predictor_host, headers=headers, json=data)
-        original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'], dtype=np.float32)
-        top_indexes = np.argsort(original_pred_output)[::-1][:5]
-
-        label_index_path = os.path.join(os.path.dirname(os.path.abspath(inspect.stack()[0][1])), 'foodlg', 'class_indices', 'food204' + '.npy')
-        label2index = np.load(label_index_path).item()  
-        index2label = [None] * len(label2index)
-        for k, v in label2index.items():
-            index2label[v] = k
-
-        tops = {}
-        for idx in top_indexes:
-            tops[index2label[idx]] = float(original_pred_output[idx])
+        original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'])
         
-        return tops
+        #return dict(original_pred_output[:5])
+        return {k: round(float(v),6) for k, v in dict(original_pred_output[:5]).items()}
 
     try:
         task = get_task_in_lowercase(request)
@@ -148,7 +138,7 @@ def model_endpoint():
         return error_response_service_unavailable(message='Request timeout. Please try again.')
     except Exception as e:
         print(e)
-        return error_response_internal_server_error(message='Error during classification.')
+        return error_response_internal_server_error(message=e)
 
     return success_response_with_json(quota=user['quota'], tier=user['tier'], results=request_done)
 
@@ -361,3 +351,4 @@ def error_response_with_json(error_code, **kwargs):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
+
