@@ -4,7 +4,8 @@ password_hashes = {
     'admin': '$6$rounds=656000$tfiKl7FPQ5VU5YlE$POAeVZC92E/BTExiIDF1l6lPZcyxj6vTKKBsmOiIK78QoW5WKBzkGGGTMlGcs3dEBYvKBwsovHIhCt2Nr1MWc0',
     'rs': '$6$rounds=656000$RqY.pFU8pZE8AK/U$.7mWdlDIw4z9DZfLIqDB.4xP0KnkEO8i2PkHFyEqFVRSizPZ6iZx1E9iaDy4Tb/4WdRuKDjWZVgYHJsWjQWIE0',
     'ww': '$6$rounds=656000$6kgbBYbKIsK7c5YR$rbILuLSxKclU3JhNc8ywUElbKSF1X6bIDVuq4K966VHp/TZrK7SjhkqkI/orccENi5mXwcnS7tZpXexntMG5M.',
-    'frontend': '$6$rounds=656000$VdOMAC5zhDEiN5Tc$1mzwlZkCcgSN95p2HRtbew8uhNv7dK/WgzgTIkj7.SmkxowrvW4UhpNsg4vh95d5XzLaRssdWKx4cvmWyQS0n.'
+    'frontend': '$6$rounds=656000$VdOMAC5zhDEiN5Tc$1mzwlZkCcgSN95p2HRtbew8uhNv7dK/WgzgTIkj7.SmkxowrvW4UhpNsg4vh95d5XzLaRssdWKx4cvmWyQS0n.',
+    'vaan': '$6$rounds=656000$Js3r9FWU3YdQlqDq$o2JVb.bppxDeA/fTfnTqAultIk43DAhUIv59kXs1DXPqDYSNN96Kale6ccUiK9ZiAV7TQl5tY8svWRWN9oe.r/'
 }
 
 
@@ -27,3 +28,4 @@ def make_new_hash():
 
 if __name__ == '__main__':
     make_new_hash()
+

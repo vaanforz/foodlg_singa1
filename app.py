@@ -1,9 +1,11 @@
 import json
 import time
 
+import flask
 from flask import Flask, jsonify, redirect, request, render_template, make_response, url_for
 from flask_httpauth import HTTPBasicAuth
 from passlib.apps import custom_app_context as password_context
+from werkzeug import secure_filename
 import redis
 
 import admins
@@ -16,11 +18,13 @@ import io
 import argparse
 import requests
 import numpy as np
+#import pandas as pd
 import ast
 
 import os
 import inspect
 import traceback
+from copy import deepcopy
 
 from keras.preprocessing.image import load_img, img_to_array
 
@@ -33,7 +37,8 @@ auth = HTTPBasicAuth()
 
 @app.route('/', methods=['GET'])
 def index_endpoint():
-    return success_response_with_json()
+    return render_template('index.html')
+    #return success_response_with_json()
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -52,6 +57,20 @@ def user_signup_endpoint():
         else:
             message = 'Your account has been created. Tier: {}. Token: {}'.format(user['tier'], user['token'])
     return render_template('signup.html', error=message)
+
+
+@app.route("/uploader", methods=["GET","POST"])
+def get_image():
+    if request.method == 'POST':
+        f = request.files['file_photo']
+        sfname = str(secure_filename(f.filename))
+        f.save('static/'+sfname)
+
+        #clf = catdog.classifier()
+        #clf.save_image(f.filename)
+
+        #return render_template('result.html', pred = clf.predict(sfname), imgpath = sfname)
+        return render_template('results.html', imgpath = ('/static/'+sfname))
 
 
 @app.route('/quota', methods=['GET'])
