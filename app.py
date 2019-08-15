@@ -2,7 +2,7 @@ import json
 import time
 
 import flask
-from flask import Flask, jsonify, redirect, request, render_template, make_response, url_for
+from flask import Flask, jsonify, redirect, request, render_template, make_response, url_for, session
 from flask_httpauth import HTTPBasicAuth
 from passlib.apps import custom_app_context as password_context
 from werkzeug import secure_filename
@@ -36,9 +36,12 @@ auth = HTTPBasicAuth()
 
 
 @app.route('/', methods=['GET'])
+@auth.login_required
 def index_endpoint():
-    return render_template('index.html')
-    #return success_response_with_json()
+    #token = auth.get_password(auth.username())
+    user = users.get_user(name=auth.username())
+    return render_template('index.html', quota=user['quota'])
+    
 
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -65,19 +68,54 @@ def get_image():
         f = request.files['file_photo']
         sfname = str(secure_filename(f.filename))
         f.save('static/'+sfname)
+        
+        user = users.get_user(name=auth.username())
+        newuser = {'quota': int(user['quota']) -1 }
+        users.update_user(name=user['name'], updates=newuser)
+        
+        food101_npy = {0: 'dumplings',
+                       1: 'hummus',
+                       2: 'poutine',
+                       3: 'prime_rib',
+                       4: 'club_sandwich',
+                       5: 'lasagna',
+                       6: 'takoyaki',
+                       7: 'eggs_benedict',
+                       8: 'apple_pie',
+                       9: 'creme_brulee'}
+        
+        def predict_and_parse(image_bytes):
+            img = (Image.open(io.BytesIO(image_bytes))).convert('L')
+            x = img_to_array(img)[0]
 
-        #clf = catdog.classifier()
-        #clf.save_image(f.filename)
+            predictor_host = open("rafiki_predictor_host.txt", "r").read().splitlines()[0]
+            data={'query': x.tolist()}
+            headers = {'Content-Type': 'application/json'}
 
-        #return render_template('result.html', pred = clf.predict(sfname), imgpath = sfname)
-        return render_template('results.html', imgpath = ('/static/'+sfname))
+            r = requests.post(predictor_host, headers=headers, json=data)
+            original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'])
+            original_pred_output = [round(i,4) for i in original_pred_output]
+            return original_pred_output
+   
+        original_pred_output = predict_and_parse(open('static/'+sfname, 'rb').read())
+        top_k = 5
+        top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
+
+        return render_template('results.html', imgpath = ('/static/'+sfname),
+                               top1 = food101_npy[top_indexes[0]], top1_prob = original_pred_output[top_indexes[0]],
+                               top2 = food101_npy[top_indexes[1]], top2_prob = original_pred_output[top_indexes[1]],
+                               top3 = food101_npy[top_indexes[2]], top3_prob = original_pred_output[top_indexes[2]],
+                               top4 = food101_npy[top_indexes[3]], top4_prob = original_pred_output[top_indexes[3]],
+                               top5 = food101_npy[top_indexes[4]], top5_prob = original_pred_output[top_indexes[4]]
+                              )
 
 
 @app.route('/quota', methods=['GET'])
 def user_quota_endpoint():
     try:
-        token = get_token(request)
-        user = users.get_user(token=token)
+        user = users.get_user(name=auth.username())
+#         token = get_token(request)
+#         user = users.get_user(token=token)
     except classes.UserAuthenticationError as bad_token_error:
         return error_response_unauthorized(message=str(bad_token_error))
     except classes.UserNotFoundError:
@@ -308,18 +346,29 @@ def get_task_in_lowercase(request):
 #             time.sleep(settings.APP_POLLING_INTERVAL)
 
 
+# @auth.verify_password
+# def is_admin(username, password):
+#     try:
+#         all_admins = admins.password_hashes
+#         password_hash = all_admins[username]
+#     except:  # Admin username not found.
+#         return False
+#     return password_context.verify(password, password_hash)  # Admin username found. Verify the password.
+
 @auth.verify_password
-def is_admin(username, password):
+def is_user(username, token):
     try:
-        all_admins = admins.password_hashes
-        password_hash = all_admins[username]
-    except:  # Admin username not found.
+        user = users.get_user(name=username)
+#         session['username'] = username
+#         session['token'] = token
+    except:
         return False
-    return password_context.verify(password, password_hash)  # Admin username found. Verify the password.
+    return (token == user['token'])
 
 
 @auth.error_handler
 def error_response_not_admin():
+    #return redirect('/signup')
     return error_response_unauthorized(message='Admin access required.')
 
 

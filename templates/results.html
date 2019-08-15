@@ -1,22 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-  <meta charset="utf-8">
-  <title>Upload</title>
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <meta charset="UTF-8">
+  <title>results.html</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css'>
+<link rel="stylesheet" href="/static/results.css">
 </head>
 <body>
-    <!--<h3> Prediction: {{ pred }} </h3> -->
-    <h3> Image </h3>
-  <br><br>
-  <img src="{{imgpath}}">
-  <script>
+<!-- partial:index.partial.html -->
+<html>
 
-  </script>
+<head>
+
+  <title>Foodlg Predictor</title>
+</head>
+
+<body>
+
+  <div class="table">
+    <div class="table-cell">
+      <div class="modal">
+        <div id="profile" class="hasImage" style="background-image: url('{{imgpath}}');">
+
+          <label></label>
+
+        </div>
+
+      </div>
+      
+      <div class="leaderboard">
+  <h1>
+    Prediction
+  </h1>
+  <ol>
+    <li value= "1">
+      <mark>{{top1}}</mark>
+      <small>{{top1_prob}}</small>
+    </li>
+    <li>
+      <mark>{{top2}}</mark>
+      <small>{{top2_prob}}</small>
+    </li>
+    <li>
+      <mark>{{top3}}</mark>
+      <small>{{top3_prob}}</small>
+    </li>
+    <li>
+      <mark>{{top4}}</mark>
+      <small>{{top4_prob}}</small>
+    </li>
+    <li>
+      <mark>{{top5}}</mark>
+      <small>{{top5_prob}}</small>
+    </li>
+  </ol>
+        
+        <a href="/"><button>Return</button></a>
+</div>
+      
+ 
+
+    </div>
+    
+    
+  </div>
+
+</body>
+
+</html>
+<!-- partial -->
+  <script src='http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/gsap/1.18.0/TweenMax.min.js'></script>
 
 </body>
 </html>
-
-
-
