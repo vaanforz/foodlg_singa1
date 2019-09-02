@@ -73,40 +73,26 @@ def get_image():
         newuser = {'quota': int(user['quota']) -1 }
         users.update_user(name=user['name'], updates=newuser)
         
-        food101_npy = {0: 'dumplings',
-                       1: 'hummus',
-                       2: 'poutine',
-                       3: 'prime_rib',
-                       4: 'club_sandwich',
-                       5: 'lasagna',
-                       6: 'takoyaki',
-                       7: 'eggs_benedict',
-                       8: 'apple_pie',
-                       9: 'creme_brulee'}
         
         def predict_and_parse(image_bytes):
-            img = (Image.open(io.BytesIO(image_bytes))).convert('L')
-            x = img_to_array(img)[0]
+            img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
+            img = img.resize((299,299), Image.NEAREST)
+            x = img_to_array(img)
+            x /= 255 * 1.
+            x = x.reshape((1,) + x.shape)
 
-            predictor_host = open("rafiki_predictor_host.txt", "r").read().splitlines()[0]
-            data={'query': x.tolist()}
-            headers = {'Content-Type': 'application/json'}
-
-            r = requests.post(predictor_host, headers=headers, json=data)
-            original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'])
-            original_pred_output = [round(i,4) for i in original_pred_output]
-            return original_pred_output
+            return model.predict(x)
    
         original_pred_output = predict_and_parse(open('static/'+sfname, 'rb').read())
         top_k = 5
         top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
 
         return render_template('results.html', imgpath = ('/static/'+sfname),
-                               top1 = food101_npy[top_indexes[0]], top1_prob = original_pred_output[top_indexes[0]],
-                               top2 = food101_npy[top_indexes[1]], top2_prob = original_pred_output[top_indexes[1]],
-                               top3 = food101_npy[top_indexes[2]], top3_prob = original_pred_output[top_indexes[2]],
-                               top4 = food101_npy[top_indexes[3]], top4_prob = original_pred_output[top_indexes[3]],
-                               top5 = food101_npy[top_indexes[4]], top5_prob = original_pred_output[top_indexes[4]]
+                               top1 = food204_npy[top_indexes[0]], top1_prob = original_pred_output[top_indexes[0]],
+                               top2 = food204_npy[top_indexes[1]], top2_prob = original_pred_output[top_indexes[1]],
+                               top3 = food204_npy[top_indexes[2]], top3_prob = original_pred_output[top_indexes[2]],
+                               top4 = food204_npy[top_indexes[3]], top4_prob = original_pred_output[top_indexes[3]],
+                               top5 = food204_npy[top_indexes[4]], top5_prob = original_pred_output[top_indexes[4]]
                               )
 
 
@@ -425,5 +411,16 @@ def error_response_with_json(error_code, **kwargs):
 
 
 if __name__ == '__main__':
+    classes = 204
+    base_model = Xception(include_top=True, input_shape=(299, 299, 3))
+    base_model.layers.pop()
+    predictions = Dense(classes, activation='softmax')(base_model.layers[-1].output)
+    global model
+    model = Model(input=base_model.input, output=[predictions])
+    model.load_weights('/static/local_model/xception-24-0.84.h5')
+
+    global food204_npy
+    food204_npy = {v:k for k,v in np.load('/static/class_indices/food204.npy')[()].items()}
+
     app.run(host='0.0.0.0')
 
