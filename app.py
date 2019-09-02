@@ -28,6 +28,16 @@ from copy import deepcopy
 
 from keras.preprocessing.image import load_img, img_to_array
 
+import tensorflow as tf
+from keras.models import load_model
+from keras.models import Model
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D, Activation, Reshape
+from keras.layers import Dense, GlobalAveragePooling2D
+from keras.applications.xception import Xception
+
+
+
 app = Flask(__name__)
 auth = HTTPBasicAuth()
 # requests_db = redis.StrictRedis(host=settings.REDIS_HOST,
@@ -73,7 +83,6 @@ def get_image():
         newuser = {'quota': int(user['quota']) -1 }
         users.update_user(name=user['name'], updates=newuser)
         
-        
         def predict_and_parse(image_bytes):
             img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
             img = img.resize((299,299), Image.NEAREST)
@@ -81,9 +90,12 @@ def get_image():
             x /= 255 * 1.
             x = x.reshape((1,) + x.shape)
 
-            return model.predict(x)
+            with graph.as_default():
+                preds = model.predict(x)
+            return preds
    
         original_pred_output = predict_and_parse(open('static/'+sfname, 'rb').read())
+        original_pred_output = original_pred_output[0]
         top_k = 5
         top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
 
@@ -417,10 +429,14 @@ if __name__ == '__main__':
     predictions = Dense(classes, activation='softmax')(base_model.layers[-1].output)
     global model
     model = Model(input=base_model.input, output=[predictions])
-    model.load_weights('/static/local_model/xception-24-0.84.h5')
+    model.load_weights('static/local_model/xception-24-0.84.h5')
+    model._make_predict_function()
+
+    global graph
+    graph = tf.get_default_graph()
 
     global food204_npy
-    food204_npy = {v:k for k,v in np.load('/static/class_indices/food204.npy')[()].items()}
+    food204_npy = {v:k for k,v in np.load('static/class_indices/food204.npy')[()].items()}
 
     app.run(host='0.0.0.0')
 
