@@ -98,6 +98,7 @@ def get_image():
         original_pred_output = original_pred_output[0]
         top_k = 5
         top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
+        original_pred_output = [round(i,3) for i in original_pred_output]
 
         return render_template('results.html', imgpath = ('/static/'+sfname),
                                top1 = food204_npy[top_indexes[0]], top1_prob = original_pred_output[top_indexes[0]],
