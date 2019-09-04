@@ -53,7 +53,7 @@ RUN pip install --upgrade pip
 RUN pip install numpy==1.16.2
 RUN pip install tensorflow==1.14.0
 RUN pip install Keras==2.2.4
-RUN pip install flask flask-httpauth flask-sqlalchemy passlib redis opencv-python Pillow
+RUN pip install flask flask-httpauth flask-sqlalchemy passlib redis opencv-python Pillow pandas
 
 # create directory
 RUN cd /root

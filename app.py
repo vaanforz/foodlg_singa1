@@ -18,7 +18,7 @@ import io
 import argparse
 import requests
 import numpy as np
-#import pandas as pd
+import pandas as pd
 import ast
 
 import os
@@ -99,13 +99,44 @@ def get_image():
         top_k = 5
         top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
         original_pred_output = [round(i,3) for i in original_pred_output]
-
+        
+        energy = 0
+        fat = 0
+        sodium = 0
+        protein = 0
+        per_serving = 'nil'
+        try:
+            top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+            top1_food = nutrition_mapping[nutrition_mapping.name.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
+            energy = int(round(float(top1_food['Energy']),0))
+            fat = int(round(float(top1_food['TotalFat']),0))
+            sodium = int(round(float(top1_food['Sodium']),0))
+            protein = int(round(float(top1_food['Protein']),0))
+            per_serving = top1_food['portion']
+        except:
+            pass
+        
+        if(energy == 0):
+            try:
+                top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+                top1_food = nutrition_mapping[nutrition_mapping.altname.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
+                energy = int(round(float(top1_food['Energy']),0))
+                fat = int(round(float(top1_food['TotalFat']),0))
+                sodium = int(round(float(top1_food['Sodium']),0))
+                protein = int(round(float(top1_food['Protein']),0))
+                per_serving = top1_food['portion']
+            except:
+                pass
+        
+        
         return render_template('results.html', imgpath = ('/static/'+sfname),
                                top1 = food204_npy[top_indexes[0]], top1_prob = original_pred_output[top_indexes[0]],
                                top2 = food204_npy[top_indexes[1]], top2_prob = original_pred_output[top_indexes[1]],
                                top3 = food204_npy[top_indexes[2]], top3_prob = original_pred_output[top_indexes[2]],
                                top4 = food204_npy[top_indexes[3]], top4_prob = original_pred_output[top_indexes[3]],
-                               top5 = food204_npy[top_indexes[4]], top5_prob = original_pred_output[top_indexes[4]]
+                               top5 = food204_npy[top_indexes[4]], top5_prob = original_pred_output[top_indexes[4]],
+                               energy = min(energy,1000), fat = min(fat,100), sodium = min(sodium,1000), protein = min(protein,100),
+                               per_serving = per_serving
                               )
 
 
@@ -438,6 +469,15 @@ if __name__ == '__main__':
 
     global food204_npy
     food204_npy = {v:k for k,v in np.load('static/class_indices/food204.npy')[()].items()}
+    
+    global searchterms_mapping
+    searchterms_mapping = open('static/food_and_nutrition_mappings/foodrecog-json.txt', 'r').read()
+    searchterms_mapping = ast.literal_eval(searchterms_mapping.replace('\n','').replace('\t',''))
+    
+    global nutrition_mapping
+    nutrition_mapping = pd.read_json('static/food_and_nutrition_mappings/foodtypes.json')
 
     app.run(host='0.0.0.0')
+
+
 

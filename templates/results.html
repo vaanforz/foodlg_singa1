@@ -2,7 +2,7 @@
 <html lang="en" >
 <head>
   <meta charset="UTF-8">
-  <title>results.html</title>
+  <title>results2.html</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
 <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css'>
 <link rel="stylesheet" href="/static/results.css">
@@ -28,12 +28,12 @@
         </div>
 
       </div>
-      
+
       <div class="leaderboard">
-  <h1>
-    Prediction
-  </h1>
-  <ol>
+        <h1>
+          Prediction
+        </h1>
+        <ol>
     <li value= "1">
       <mark>{{top1}}</mark>
       <small>{{top1_prob}}</small>
@@ -56,14 +56,78 @@
     </li>
   </ol>
         
-        <a href="/"><button>Return</button></a>
-</div>
-      
- 
+            <h1>Nutrition</h1>
+            <p>{{per_serving}}</p>
+            <p>per serving</p>
+        
+        <div class="container">
+
+  <div class="chart small-font-size">
+
+    <div class="bar bar-{{energy}} lime">
+      <div class="face side-0">
+        <div class="growing-bar-Energy"></div>
+      </div>
+
+      <div class="face side-1">
+        <div class="growing-bar-Energy"></div>
+      </div>
+
+      <div class="face top"></div>
+      <div class="face floor"></div>
+      <div class="floorText">Energy<br>(kcal)</div>
 
     </div>
+
+    <div class="bar bar-{{fat}} red">
+      <div class="face side-0">
+        <div class="growing-bar"></div>
+      </div>
+      <div class="face side-1">
+        <div class="growing-bar"></div>
+      </div>
+      <div class="face top"></div>
+      <div class="face floor"></div>
+      <div class="floorText">Fat<br>(g)</div>
+    </div>
     
+    <div class="bar bar-{{sodium}} cyan">
+      <div class="face side-0">
+        <div class="growing-bar-Sodium"></div>
+      </div>
+      <div class="face side-1">
+        <div class="growing-bar-Sodium"></div>
+      </div>
+      <div class="face top"></div>
+      <div class="face floor"></div>
+      <div class="floorText">Sodium<br>(mg)</div>
+    </div>
+
+    <div class="bar bar-{{protein}} yellow">
+      
+      <div class="face side-0">
+        <div class="growing-bar"></div>
+      </div>
+      <div class="face side-1">
+        <div class="growing-bar"></div>
+      </div>
+      
+
+      <div class="face top"></div>
+      <div class="face floor"></div>
+      <div class="floorText">Protein<br>(g)</div>
+      
+    </div>
     
+  </div>
+
+</div>
+
+        <a href="/"><button>Return</button></a>
+      </div>
+
+    </div>
+
   </div>
 
 </body>
