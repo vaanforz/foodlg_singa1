@@ -80,8 +80,11 @@ def get_image():
         f.save('static/'+sfname)
         
         user = users.get_user(name=auth.username())
+        if int(user['quota']) <= 0:
+            return error_response_unauthorized(message='No more request quota.', quota=user['quota'], tier=user['tier'])
+        
         newuser = {'quota': int(user['quota']) -1 }
-        users.update_user(name=user['name'], updates=newuser)
+        user = users.update_user(name=user['name'], updates=newuser)
         
         def predict_and_parse(image_bytes):
             img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
@@ -196,45 +199,65 @@ def model_endpoint():
 
     if int(user['quota']) <= 0:
         return error_response_unauthorized(message='No more request quota.', quota=user['quota'], tier=user['tier'])
+    newuser = {'quota': int(user['quota']) -1 }
+    user = users.update_user(name=user['name'], updates=newuser)
 
     def predict_and_parse(image_bytes):
         img = (Image.open(io.BytesIO(image_bytes))).convert('RGB')
+        img = img.resize((299,299), Image.NEAREST)
         x = img_to_array(img)
+        x /= 255 * 1.
+        x = x.reshape((1,) + x.shape)
 
-        predictor_host = open("rafiki_predictor_host.txt", "r").read().splitlines()[0]
-        data={'query': x.tolist()}
-        headers = {'Content-Type': 'application/json'}
+        with graph.as_default():
+            preds = model.predict(x)
+        return preds
 
-        r = requests.post(predictor_host, headers=headers, json=data)
-        original_pred_output = np.asarray(ast.literal_eval(r.content.decode('utf-8'))['prediction'])
-        
-        top_k = request.args.get('top_k')
-        try:
-            top_k = int(top_k)
-            if(top_k < 1):
-                top_k = 5
-        except:
-            top_k = 5
-            
-        return {k: round(float(v),6) for k, v in dict(original_pred_output[:top_k]).items()}
+    original_pred_output = predict_and_parse(image_bytes)
+    original_pred_output = original_pred_output[0]
+    top_k = 5
+    top_indexes = np.argsort(original_pred_output)[::-1][:top_k]
+    original_pred_output = [round(i,3) for i in original_pred_output]
 
+    energy = 0
+    fat = 0
+    sodium = 0
+    protein = 0
+    per_serving = 'nil'
     try:
-        task = get_task_in_lowercase(request)
-        # request_id = make_request_in_queue(image=image_bytes, queue=task)
-        # request_done = wait_for_request_done(request_id)
-        request_done = predict_and_parse(image_bytes)
-        if not task == 'echo':
-            newuser = {'quota': int(user['quota']) -1 }
-            user = users.update_user(name=user['name'], updates=newuser)
-    except classes.InvalidTaskError as invalid_task_error:
-        return error_response_bad_request(message=str(invalid_task_error))
-    except classes.AppServerTimeoutError:
-        return error_response_service_unavailable(message='Request timeout. Please try again.')
-    except Exception as e:
-        print(e)
-        return error_response_internal_server_error(message=e)
+        top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+        top1_food = nutrition_mapping[nutrition_mapping.name.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
+        energy = int(round(float(top1_food['Energy']),0))
+        fat = int(round(float(top1_food['TotalFat']),0))
+        sodium = int(round(float(top1_food['Sodium']),0))
+        protein = int(round(float(top1_food['Protein']),0))
+        per_serving = top1_food['portion']
+    except:
+        pass
 
-    return success_response_with_json(quota=user['quota'], tier=user['tier'], results=request_done)
+    if(energy == 0):
+        try:
+            top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+            top1_food = nutrition_mapping[nutrition_mapping.altname.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
+            energy = int(round(float(top1_food['Energy']),0))
+            fat = int(round(float(top1_food['TotalFat']),0))
+            sodium = int(round(float(top1_food['Sodium']),0))
+            protein = int(round(float(top1_food['Protein']),0))
+            per_serving = top1_food['portion']
+        except:
+            pass
+     
+    results = {1: (food204_npy[top_indexes[0]], original_pred_output[top_indexes[0]]),
+               2: (food204_npy[top_indexes[1]], original_pred_output[top_indexes[1]]),
+               3: (food204_npy[top_indexes[2]], original_pred_output[top_indexes[2]]),
+               4: (food204_npy[top_indexes[3]], original_pred_output[top_indexes[3]]),
+               5: (food204_npy[top_indexes[4]], original_pred_output[top_indexes[4]])
+              }
+
+    return success_response_with_json(quota=user['quota'], tier=user['tier'],
+                                      results = str(results),
+                                      nutrition = {'per_serving': per_serving, 'energy': energy, 'fat': fat, 'sodium': sodium, 'protein': protein}
+                                     )
 
 
 @app.route('/users', methods=['GET'])
