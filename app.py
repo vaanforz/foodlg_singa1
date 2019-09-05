@@ -146,9 +146,8 @@ def get_image():
 @app.route('/quota', methods=['GET'])
 def user_quota_endpoint():
     try:
-        user = users.get_user(name=auth.username())
-#         token = get_token(request)
-#         user = users.get_user(token=token)
+        token = get_token(request)
+        user = users.get_user(token=token)
     except classes.UserAuthenticationError as bad_token_error:
         return error_response_unauthorized(message=str(bad_token_error))
     except classes.UserNotFoundError:
@@ -247,11 +246,18 @@ def model_endpoint():
         except:
             pass
      
-    results = {1: (food204_npy[top_indexes[0]], original_pred_output[top_indexes[0]]),
-               2: (food204_npy[top_indexes[1]], original_pred_output[top_indexes[1]]),
-               3: (food204_npy[top_indexes[2]], original_pred_output[top_indexes[2]]),
-               4: (food204_npy[top_indexes[3]], original_pred_output[top_indexes[3]]),
-               5: (food204_npy[top_indexes[4]], original_pred_output[top_indexes[4]])
+    # results = {1: (food204_npy[top_indexes[0]], original_pred_output[top_indexes[0]]),
+    #            2: (food204_npy[top_indexes[1]], original_pred_output[top_indexes[1]]),
+    #            3: (food204_npy[top_indexes[2]], original_pred_output[top_indexes[2]]),
+    #            4: (food204_npy[top_indexes[3]], original_pred_output[top_indexes[3]]),
+    #            5: (food204_npy[top_indexes[4]], original_pred_output[top_indexes[4]])
+    #           }
+
+    results = {food204_npy[top_indexes[0]]: original_pred_output[top_indexes[0]],
+               food204_npy[top_indexes[1]]: original_pred_output[top_indexes[1]],
+               food204_npy[top_indexes[2]]: original_pred_output[top_indexes[2]],
+               food204_npy[top_indexes[3]]: original_pred_output[top_indexes[3]],
+               food204_npy[top_indexes[4]]: original_pred_output[top_indexes[4]]
               }
 
     return success_response_with_json(quota=user['quota'], tier=user['tier'],
