@@ -109,7 +109,7 @@ def get_image():
         protein = 0
         per_serving = 'nil'
         try:
-            top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+            top1_searchterm = (searchterms_mapping[(food204_npy[top_indexes[0]]).lower()]['searchterms']).lower()
             top1_food = nutrition_mapping[nutrition_mapping.name.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
             energy = int(round(float(top1_food['Energy']),0))
             fat = int(round(float(top1_food['TotalFat']),0))
@@ -121,7 +121,7 @@ def get_image():
         
         if(energy == 0):
             try:
-                top1_searchterm = searchterms_mapping[food204_npy[top_indexes[0]]]['searchterms']
+                top1_searchterm = (searchterms_mapping[(food204_npy[top_indexes[0]]).lower()]['searchterms']).lower()
                 top1_food = nutrition_mapping[nutrition_mapping.altname.apply(lambda x: top1_searchterm in str(x).lower())].iloc[0]
                 energy = int(round(float(top1_food['Energy']),0))
                 fat = int(round(float(top1_food['TotalFat']),0))
